@@ -62,10 +62,15 @@ export async function createActivity(a: ActivityInput) {
   return { id: row.id, inviteHash: row.invite_hash };
 }
 
+type MyRow = {
+  id: string; title: string; starts_at: string; venue_public: string; visibility: MyActivity["visibility"];
+  relation: MyActivity["relation"]; invite_hash: string | null; going_count: number;
+};
+
 export async function listMyActivities(): Promise<MyActivity[]> {
   const { data, error } = await supabase.rpc("get_my_activities");
   if (error) throw error;
-  return (data as any[]).map((r) => ({
+  return (data as MyRow[]).map((r) => ({
     id: r.id, title: r.title, startsAt: r.starts_at, venuePublic: r.venue_public,
     visibility: r.visibility, relation: r.relation, inviteHash: r.invite_hash, goingCount: r.going_count,
   }));

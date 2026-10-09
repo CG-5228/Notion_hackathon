@@ -1,25 +1,13 @@
-// Local types for the events feature. EventSummary mirrors the shared contract
-// (Member 1 owns src/types); swap to that import once it lands.
-export type EventKind = "curated_public" | "student_created";
+// Local types for the events feature. EventSummary is the shared contract (Member 1, "@/types").
+import type { EventSummary } from "@/types";
+
+export type { EventSummary };
 export type Visibility = "public" | "campus" | "invite_only";
-export type ReviewStatus = "curated" | "pending" | "student_posted";
 
 export const CATEGORIES = [
   "hackathon", "groceries", "cinema", "coffee", "society", "sport", "study", "culture", "other",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
-
-export type EventSummary = {
-  id: string;
-  title: string;
-  category: string;
-  startsAt: string;
-  venuePublic: string;
-  kind: EventKind;
-  goingCount: number;
-  universitiesRepresented?: number;
-  reviewStatus: ReviewStatus;
-};
 
 export type EventDetail = EventSummary & {
   description: string;

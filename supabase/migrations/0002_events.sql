@@ -1,9 +1,7 @@
 -- 0002_events.sql — Member 3: events, RSVPs, ratings, safe discovery.
--- Depends on 0001 (Member 1): public.profiles(id uuid = auth.users.id, university_id uuid),
--- public.universities(id), and public.is_verified_student(uid uuid) returns boolean.
--- If 0001 uses different names, adapt ONLY the helper shim below (fyb_is_verified).
-
-create extension if not exists pgcrypto;
+-- Depends on 0001 (Member 1): public.profiles(user_id uuid = auth.users.id, university_id uuid),
+-- public.universities(id), and public.is_verified_student(p_user uuid) returns boolean.
+-- If 0001 changes names, adapt ONLY the helper shim below (fyb_is_verified).
 
 -- ---------------------------------------------------------------- helpers
 create or replace function public.fyb_is_verified(uid uuid)
@@ -87,7 +85,7 @@ returns boolean language sql stable security definer set search_path = public as
     or public.fyb_is_curator(uid)
     or (e.visibility = 'public' and e.review_status in ('curated','student_posted'))
     or (e.visibility = 'campus' and e.campus_university_id =
-          (select university_id from public.profiles where id = uid))
+          (select university_id from public.profiles where user_id = uid))
     or (e.visibility = 'invite_only' and p_invite is not null and e.invite_hash = p_invite)
   );
 $$;
@@ -126,7 +124,7 @@ begin
   from events e
   left join lateral (
     select count(distinct r.user_id) cnt, count(distinct p.university_id) unis
-    from event_rsvps r left join profiles p on p.id = r.user_id
+    from event_rsvps r left join profiles p on p.user_id = r.user_id
     where r.event_id = e.id and r.status = 'going'
   ) g on true
   left join lateral (
@@ -195,8 +193,10 @@ begin
      or p_venue_public ~* '(apartment|apt\.?|flat\s*\d|house\s*no|my (place|house|room)|eircode|\m[A-Z]\d{2}\s?[A-Z0-9]{4}\M)' then
     raise exception 'use a public or general meeting point, not a private address';
   end if;
-  select university_id into v_uni from profiles where profiles.id = uid;
-  if p_visibility = 'invite_only' then v_hash := encode(gen_random_bytes(18), 'hex'); end if;
+  select university_id into v_uni from profiles where profiles.user_id = uid;
+  if p_visibility = 'invite_only' then
+    v_hash := replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
+  end if;
   insert into events (host_id, title, description, category, starts_at, ends_at, venue_public,
                       event_kind, visibility, campus_university_id, review_status, invite_hash)
   values (uid, trim(p_title), coalesce(trim(p_description),''), p_category, p_starts_at, p_ends_at,

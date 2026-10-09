@@ -4,13 +4,14 @@ Event discovery, student-created activities, privacy-safe RSVP counts, and ratin
 
 ## Files
 - `supabase/migrations/0002_events.sql`: tables, RLS (no direct client table access), secure RPCs
+- `supabase/tests/0002_events.test.sql`: rolls back; prints `ALL 0002 EVENTS TESTS PASSED` (visibility, invite links, idempotent RSVP, no table access)
 - `src/features/events/*`: `EventsFeed`, `ActivityDetail`, `CreateActivity`, `MyActivities`, API, validation
 - `seed/demo_events.sql`: three clearly labelled SYNTHETIC events with no prefilled RSVPs
 
 ## Dependencies on 0001 (Member 1)
-- `public.profiles(id, university_id)`, `public.universities(id)`
-- `public.is_verified_student(uid uuid) returns boolean`. If the name differs, edit only `fyb_is_verified` in 0002.
-- `@/lib/supabase` exporting `supabase`
+- `public.profiles(user_id, university_id)`, `public.universities(id)`
+- `public.is_verified_student(p_user uuid) returns boolean`. If the name differs, edit only `fyb_is_verified` in 0002.
+- `@/lib/supabase` exporting `supabase`; `EventSummary` from `@/types`; UI kit from `@/components`
 
 ## RPCs
 | RPC | Purpose |
@@ -24,6 +25,9 @@ Event discovery, student-created activities, privacy-safe RSVP counts, and ratin
 | `report_event(p_event_id, p_reason)` | **Owned by Member 5 (0004)**. The UI shows a fallback message until it exists. |
 
 ## Router wiring (Member 1)
+The screens follow `docs/CONTRACTS.md` and route themselves by default, so `src/app/routes.tsx` just renders
+`<EventsFeed />`, `<ActivityDetail eventId={id} />` (reads `?invite=` itself), `<CreateActivity />` and `<MyActivities />`.
+The callbacks below are optional overrides:
 ```tsx
 <EventsFeed onOpenEvent={(id) => nav(`/events/${id}`)} onCreateActivity={() => nav("/activities/new")} />
 <ActivityDetail eventId={id} inviteHash={search.invite} onFindBuddy={(id) => nav(`/find-buddy/${id}`)} />
@@ -37,6 +41,6 @@ Event discovery, student-created activities, privacy-safe RSVP counts, and ratin
 3. Invite-only events are excluded from the feed and need the matching `p_invite` hash, or the caller must be the host or already RSVP'd.
 4. `create_activity` always writes `event_kind='student_created'`. Only curators can set `curated` through `review_event`.
 5. Venue, start/end order and verified status are checked on the server.
-6. "Find Your Buddy" calls `onFindBuddy`, which leads to Member 4's pair/group selector (no default to 1-on-1).
+6. "Find your buddy" goes to `/find-buddy/:eventId`, Member 4's pair/group selector (no default to 1-on-1). Member 4's `request_buddy` requires an RSVP of `going` first, and the detail screen says so.
 
-Run the tests with `bunx vitest run src/features/events`.
+Run the tests with `npx vitest run src/features/events`. Apply `supabase/migrations/0002_events.sql` after 0001; Member 4's 0003 depends on `events(id)` and `event_rsvps(event_id, user_id, status)` from this file.

@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Button, ButtonLink, Notice, Spinner } from "@/components";
 import { listEvents } from "./api";
 import { CATEGORIES, type EventDetail, type EventFilters } from "./types";
-import { GoingCount, KindBadge, fmtDate } from "./components/Labels";
+import { GoingCount, KindBadge, fmtDate, inputClass } from "./components/Labels";
 
 type Props = {
-  /** Member 1 wires this to navigate to /events/:id */
-  onOpenEvent: (id: string) => void;
-  /** Member 1 wires this to /activities/new */
+  /** Defaults to navigating to /events/:id */
+  onOpenEvent?: (id: string) => void;
+  /** Defaults to linking to /activities/new */
   onCreateActivity?: () => void;
 };
 
-export function EventsFeed({ onOpenEvent, onCreateActivity }: Props) {
+/** Signed-in home: curated public events + student activities with anonymous "going" counts. */
+export function EventsFeed({ onOpenEvent, onCreateActivity }: Props = {}) {
   const [filters, setFilters] = useState<EventFilters>({ search: "", category: "" });
   const [events, setEvents] = useState<EventDetail[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,53 +30,59 @@ export function EventsFeed({ onOpenEvent, onCreateActivity }: Props) {
   }, [filters]);
 
   return (
-    <section className="mx-auto max-w-3xl p-4">
-      <header className="mb-4 flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Find something to do</h1>
-          <p className="text-sm text-slate-600">Pick an activity, then find a buddy or a small group for it.</p>
-        </div>
-        {onCreateActivity && (
-          <button onClick={onCreateActivity} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">
-            + Create activity
-          </button>
-        )}
-      </header>
+    <section className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <p className="text-ink-muted">Pick something to go to, then find a buddy or a small group for it.</p>
+        {onCreateActivity
+          ? <Button variant="mint" onClick={onCreateActivity}>＋ Create activity</Button>
+          : <ButtonLink to="/activities/new" variant="mint">＋ Create activity</ButtonLink>}
+      </div>
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-4">
         <input aria-label="Search" placeholder="Search title or place" value={filters.search}
           onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-          className="rounded-lg border px-3 py-2 sm:col-span-2" />
+          className={`${inputClass} mt-0 sm:col-span-2`} />
         <select aria-label="Category" value={filters.category}
           onChange={(e) => setFilters({ ...filters, category: e.target.value as EventFilters["category"] })}
-          className="rounded-lg border px-3 py-2">
+          className={`${inputClass} mt-0 capitalize`}>
           <option value="">All categories</option>
           {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <input aria-label="Up to date" type="date" value={filters.to ?? ""}
           onChange={(e) => setFilters({ ...filters, to: e.target.value || undefined })}
-          className="rounded-lg border px-3 py-2" />
+          className={`${inputClass} mt-0`} />
       </div>
 
-      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-      {!events && !error && <p className="text-slate-500">Loading events…</p>}
-      {events?.length === 0 && <p className="text-slate-500">No events match. Try different filters or create one.</p>}
+      {error && <Notice tone="error">{error}</Notice>}
+      {!events && !error && <Spinner label="Loading events" />}
+      {events?.length === 0 && (
+        <p className="rounded-card border border-dashed border-ink/15 p-8 text-center text-ink-muted">
+          No events match. Try different filters or create one.
+        </p>
+      )}
 
-      <ul className="space-y-3">
-        {events?.map((e) => (
-          <li key={e.id}>
-            <button onClick={() => onOpenEvent(e.id)}
-              className="w-full rounded-xl border bg-white p-4 text-left shadow-sm transition hover:shadow">
+      <ul className="grid gap-3 md:grid-cols-2">
+        {events?.map((e) => {
+          const body = (
+            <>
               <KindBadge e={e} />
-              <h2 className="mt-2 text-lg font-semibold text-slate-900">{e.title}</h2>
-              <p className="text-sm text-slate-700">{fmtDate(e.startsAt)} · {e.venuePublic}</p>
-              <div className="mt-1 flex items-center justify-between">
+              <h2 className="mt-3 text-lg font-bold text-ink">{e.title}</h2>
+              <p className="mt-1 text-sm text-ink-soft">{fmtDate(e.startsAt)} · {e.venuePublic}</p>
+              <div className="mt-3 flex items-center justify-between gap-3">
                 <GoingCount n={e.goingCount} unis={e.universitiesRepresented} />
-                <span className="text-xs capitalize text-slate-500">{e.category}</span>
+                <span className="text-xs font-semibold capitalize text-ink-muted">{e.category}</span>
               </div>
-            </button>
-          </li>
-        ))}
+            </>
+          );
+          const cls = "block h-full w-full rounded-card border border-line bg-paper p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift";
+          return (
+            <li key={e.id}>
+              {onOpenEvent
+                ? <button type="button" onClick={() => onOpenEvent(e.id)} className={cls}>{body}</button>
+                : <Link to={`/events/${e.id}`} className={cls}>{body}</Link>}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
