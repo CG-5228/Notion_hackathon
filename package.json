@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "db:bundle": "node scripts/backend-repair.mjs",
+    "db:apply": "node scripts/deploy-backend.mjs",
     "demo:accounts": "node --env-file=.env.demo scripts/provision-demo-accounts.mjs"
   },
   "dependencies": {

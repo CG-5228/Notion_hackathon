@@ -27,21 +27,16 @@ export async function loadMyInterests(userId: string): Promise<SavedInterest[]> 
   return out;
 }
 
-/** Replaces the caller's interests. RLS restricts every row to user_id = auth.uid(). */
+/** Replaces the signed-in caller's interests in one database transaction. */
 export async function saveMyInterests(userId: string, interests: readonly SavedInterest[]): Promise<void> {
-  const slugs = interests.map((i) => i.tag);
-  const { data: rows, error: e1 } = await supabase.from("interests").select("id, slug").in("slug", slugs.length ? slugs : ["-"]);
-  if (e1) throw e1;
-  const idBySlug = new Map((rows ?? []).map((r: { id: string; slug: string }) => [r.slug, r.id]));
-  const { error: e2 } = await supabase.from("profile_interests").delete().eq("user_id", userId);
-  if (e2) throw e2;
-  const insert = interests
-    .filter((i) => idBySlug.has(i.tag))
-    .map((i) => ({ user_id: userId, interest_id: idBySlug.get(i.tag)!, share_on_reveal: i.shareable }));
-  if (insert.length) {
-    const { error: e3 } = await supabase.from("profile_interests").insert(insert);
-    if (e3) throw e3;
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user || user.id !== userId) throw new Error("Your signed-in account changed. Please reload and try again.");
+
+  const { error } = await supabase.rpc("set_my_interests", {
+    p_interests: interests.map(({ tag, shareable }) => ({ slug: tag, share_on_reveal: shareable })),
+  });
+  if (error) throw error;
 }
 
 const answersKey = (userId: string) => `fyb.onboarding.answers.${userId}`;

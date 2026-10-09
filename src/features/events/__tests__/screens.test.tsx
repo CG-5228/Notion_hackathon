@@ -140,3 +140,34 @@ describe("CreateActivity", () => {
     expect(api.createActivity).not.toHaveBeenCalled();
   });
 });
+
+describe("CreateActivity backend failures", () => {
+  function fillActivity() {
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Campus coffee" } });
+    fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2099-10-20T12:00" } });
+    fireEvent.change(screen.getByLabelText(/Public meeting point/), { target: { value: "Library café entrance" } });
+  }
+
+  it("identifies a missing migration and keeps the form for retry", async () => {
+    api.createActivity.mockRejectedValueOnce({ code: "PGRST202", message: "Missing create_activity" })
+      .mockResolvedValueOnce({ id: "created-event", inviteHash: null });
+    at("/activities/new", <CreateActivity />);
+    fillActivity();
+    fireEvent.click(screen.getByRole("button", { name: "Create activity" }));
+
+    expect(await screen.findByText(/backend setup is incomplete/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("Campus coffee");
+    expect(screen.queryByText("EVENT PAGE")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Create activity" }));
+    expect(await screen.findByText("EVENT PAGE")).toBeInTheDocument();
+  });
+
+  it("shows validation messages returned as Supabase error objects", async () => {
+    api.createActivity.mockRejectedValue({ code: "P0001", message: "Use a public meeting point" });
+    at("/activities/new", <CreateActivity />);
+    fillActivity();
+    fireEvent.click(screen.getByRole("button", { name: "Create activity" }));
+    expect(await screen.findByText("Use a public meeting point")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create activity" })).toBeEnabled();
+  });
+});

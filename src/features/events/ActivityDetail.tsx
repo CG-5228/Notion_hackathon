@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Card, Notice, Spinner } from "@/components";
+import { backendErrorMessage } from "@/lib/backend-errors";
 import { COPY } from "@/types";
 import { getEvent, reportEvent, setGoing } from "./api";
 import type { EventDetail } from "./types";
@@ -36,7 +37,7 @@ export function ActivityDetail({ eventId, inviteHash, onFindBuddy }: Props) {
     setReason("");
     getEvent(eventId, invite)
       .then((d) => alive && setE(d))
-      .catch((x) => { if (alive) { setErr(x.message); setE(null); } });
+      .catch((x) => { if (alive) { setErr(backendErrorMessage(x, "Could not load this activity.")); setE(null); } });
     return () => { alive = false; };
   }, [eventId, invite]);
 
@@ -48,7 +49,7 @@ export function ActivityDetail({ eventId, inviteHash, onFindBuddy }: Props) {
     try {
       const n = await setGoing(e.id, !e.iAmGoing, invite);
       setE({ ...e, iAmGoing: !e.iAmGoing, goingCount: n });
-    } catch (x) { setErr(x instanceof Error ? x.message : "Could not update RSVP"); }
+    } catch (x) { setErr(backendErrorMessage(x, "Could not update RSVP. Please try again.")); }
     finally { setBusy(false); }
   };
 
