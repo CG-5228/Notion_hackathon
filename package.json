@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:bundle": "node scripts/backend-repair.mjs",
-    "db:apply": "node scripts/deploy-backend.mjs"
+    "db:apply": "node scripts/deploy-backend.mjs",
+    "demo:accounts": "node --env-file=.env.demo scripts/provision-demo-accounts.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

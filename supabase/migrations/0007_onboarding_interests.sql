@@ -1,4 +1,4 @@
--- 0006_onboarding_interests.sql — atomic, caller-scoped interest replacement.
+-- 0007_onboarding_interests.sql — atomic, caller-scoped interest replacement.
 create or replace function public.set_my_interests(p_interests jsonb)
 returns void language plpgsql volatile security definer set search_path = '' as $$
 declare

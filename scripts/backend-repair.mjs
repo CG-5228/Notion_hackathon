@@ -24,8 +24,9 @@ const migrations = [
     "report_user(text,uuid,text,text)", "report_event(uuid,text,text)", "moderator_review_queue()",
     "moderator_resolve_outcome(uuid,text,text)", "moderator_set_report_status(uuid,text)",
   ]],
-  ["0005_my_buddy_activity.sql", ["get_my_buddy_activity()"]],
-  ["0006_onboarding_interests.sql", ["set_my_interests(jsonb)"]],
+  ["0005_demo_accounts.sql", null],
+  ["0006_my_buddy_activity.sql", ["get_my_buddy_activity()"]],
+  ["0007_onboarding_interests.sql", ["set_my_interests(jsonb)"]],
 ];
 
 const literal = (value) => `'${value.replaceAll("'", "''")}'`;
@@ -34,6 +35,7 @@ const array = (values) => `ARRAY[${values.map(literal).join(", ")}]::text[]`;
 export function backendRepairSql() {
   const blocks = migrations.map(([file, functions]) => {
     const sql = readFileSync(resolve(root, "supabase/migrations", file), "utf8");
+    if (functions === null) return `-- Idempotent demo-status function/trigger patch; no accounts are created.\n${sql}`;
     const tables = [...sql.matchAll(/create table (?:if not exists )?(public\.\w+)/gi)].map((m) => m[1]);
     const rpcs = functions.map((fn) => `public.${fn}`);
     const version = file.split("_")[0];

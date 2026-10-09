@@ -1,5 +1,5 @@
 -- Security and read-model tests for get_my_buddy_activity().
--- Run after 0001..0005 with the local auth shim; every fixture rolls back.
+-- Run after 0001..0006 with the local auth shim; every fixture rolls back.
 begin;
 
 insert into auth.users (id, email, email_confirmed_at) values
@@ -155,5 +155,5 @@ begin
 end $$;
 reset role;
 
-do $$ begin raise notice 'ALL 0005 MY BUDDY ACTIVITY TESTS PASSED'; end $$;
+do $$ begin raise notice 'ALL 0006 MY BUDDY ACTIVITY TESTS PASSED'; end $$;
 rollback;

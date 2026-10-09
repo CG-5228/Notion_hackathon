@@ -39,9 +39,10 @@ commit them, or paste them into chat.
 
 The repair is generated directly from the repository migrations. It applies
 missing migration groups in order in one transaction, skips groups whose tables
-and RPC signatures already exist, and refreshes the PostgREST schema cache. It
-does not reset the database, seed users, disable RLS, or overwrite installed
-migration groups. It refuses a partially installed group instead of guessing or
+and RPC signatures already exist, and refreshes the PostgREST schema cache. The
+idempotent `0005` demo-status function/trigger patch is reapplied safely; it does
+not create accounts. The repair does not reset the database, seed users, disable
+RLS, or overwrite installed baseline RPC/table groups. It refuses a partially installed group instead of guessing or
 dropping data. In that case, inspect the named migration and the deployed schema
 before repairing that partial installation.
 
@@ -72,12 +73,16 @@ Supabase dashboard settings:
 4. Seeded domains (TCD, UCD, DCU, UCC, Galway, UL, Maynooth, TU Dublin) **must be checked by an admin** before launch.
 
 ## Demo accounts (no global bypass)
+For the five explicitly requested DCU test accounts, see [the admin-only provisioning runbook](./DEMO_ACCOUNTS.md). It uses password sign-in, not Google OAuth. Normal email signup still requires confirmation; Supabase confirmation emails do not depend on Google OAuth.
+
+The DCU path requires migration `0005_demo_accounts.sql` (foundation-only dependency) and an explicitly confirmed, isolated demo project. Trusted admin metadata marks these synthetic users, and the app displays a persistent demo warning. Never put its service-role credential in a `VITE_` variable or commit/share the private credentials file.
+
 Domain `demo.findyourbuddy.test` → "Demo University (not real)". Only an admin can create confirmed demo users: Dashboard → Authentication → Add user → *Auto confirm user*. They carry `is_demo = true`. Disable before production:
 `update public.university_domains set active = false where domain = 'demo.findyourbuddy.test';`
 
 ## Integrated features and verification
 
-Migrations **0001 → 0006** cover student accounts, interests, events, RSVP, matching,
+Migrations **0001 → 0007** cover student accounts, interests, events, RSVP, matching,
 chat, mutual consent, safety reports, the My Plans overview, and atomic interest
 replacement. Keep applied migrations immutable; add a new numbered migration
 when changing their behavior.

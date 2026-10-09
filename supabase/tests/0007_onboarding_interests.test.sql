@@ -1,4 +1,4 @@
--- Caller-scoped atomic interest replacement tests; run after migrations 0001–0006.
+-- Caller-scoped atomic interest replacement tests; run after migrations 0001–0007.
 begin;
 
 insert into auth.users (id, email, email_confirmed_at) values
