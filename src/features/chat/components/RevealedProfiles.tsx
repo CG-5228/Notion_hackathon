@@ -4,21 +4,21 @@ import type { RevealedProfile } from "@/types";
 export function RevealedProfiles({ profiles }: { profiles: RevealedProfile[] }) {
   if (!profiles.length) return <p className="text-sm text-ink-muted">No other members remain in this plan.</p>;
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul aria-label="Revealed buddy profiles" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-3">
       {profiles.map((p, i) => (
-        <li key={`${p.displayName}-${i}`} className="flex gap-3 rounded-2xl border border-line bg-paper p-4">
+        <li key={`${p.displayName}-${i}`} className="flex min-w-0 items-start gap-3 rounded-2xl border border-line bg-paper p-3">
           {p.avatarUrl ? (
-            <img src={p.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" referrerPolicy="no-referrer" />
+            <img src={p.avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" referrerPolicy="no-referrer" />
           ) : (
-            <span aria-hidden className="grid h-12 w-12 place-items-center rounded-full bg-lilac/40 font-display text-lg font-bold">
+            <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-sage font-display text-lg font-bold text-forest">
               {p.displayName.slice(0, 1).toUpperCase()}
             </span>
           )}
-          <div>
-            <p className="font-semibold">{p.displayName}</p>
-            <p className="text-sm text-ink-muted">{p.university}</p>
+          <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+            <p className="font-display text-base font-semibold leading-snug">{p.displayName}</p>
+            <p className="mt-1 text-sm leading-snug text-ink-muted">{p.university}</p>
             {!!p.sharedInterests?.length && (
-              <p className="mt-1 text-xs text-ink-muted">Into: {p.sharedInterests.join(", ")}</p>
+              <p className="mt-2 text-xs leading-relaxed text-ink-muted">Into: {p.sharedInterests.join(", ")}</p>
             )}
           </div>
         </li>

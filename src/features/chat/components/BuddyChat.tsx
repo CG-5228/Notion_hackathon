@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Button, Card, Notice, Spinner } from "@/components";
+import { Button, ButtonLink, Card, Icon, Notice, Spinner } from "@/components";
 import { COPY, GROUP_MIN_TO_CHAT } from "@/types";
 import { chatApi } from "../api";
 import { MAX_MESSAGE_LENGTH, decodeEntities, explainError, validateMessage } from "../text";
@@ -90,7 +90,9 @@ export function BuddyChat({ matchId }: { matchId: string }) {
           <>
             <ol className="flex-1 space-y-2 overflow-y-auto p-4" aria-live="polite" aria-label="Messages">
               {messages.length === 0 && (
-                <li className="py-10 text-center text-sm text-ink-muted">No messages yet. Say hi — names stay hidden for now.</li>
+                <li className="py-10 text-center text-sm text-ink-muted">
+                  No messages yet. Say hi — {view.status === "revealed" ? "your plan starts here." : "names stay hidden for now."}
+                </li>
               )}
               {messages.map((m) => m.kind === "system" ? (
                 <li key={m.id} className="text-center text-xs text-ink-muted">{decodeEntities(m.body)}</li>
@@ -127,10 +129,18 @@ export function BuddyChat({ matchId }: { matchId: string }) {
             onLeft={() => setLeft("Everyone else's agreements were reset so the rest can decide again.")} />
         )}
         {view.status === "revealed" && (
-          <Card className="space-y-3 p-4">
-            <h2 className="text-base font-semibold">Your buddies</h2>
+          <Card className="min-w-0 space-y-4 !p-4" role="region" aria-labelledby="buddy-profiles-title">
+            <div>
+              <div className="flex items-center gap-2.5 text-forest">
+                <Icon name="users" />
+                <h2 id="buddy-profiles-title" className="text-lg font-semibold">{view.mode === "pair" ? "Your buddy" : "Your buddies"}</h2>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-ink-muted">Names shared with everyone’s agreement.</p>
+            </div>
             <RevealedProfiles profiles={view.revealedProfiles ?? []} />
-            <Link to={`/plans/${view.id}`} className="text-sm font-semibold underline">Open the plan</Link>
+            <ButtonLink to={`/plans/${view.id}`} variant="outline" className="w-full justify-between">
+              Open the plan<Icon name="arrow-right" size={16} />
+            </ButtonLink>
           </Card>
         )}
         <Card className="space-y-3 p-4">
