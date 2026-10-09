@@ -1,5 +1,6 @@
-import { ButtonLink, Icon, ReservedSlot } from "@/components";
+import { ButtonLink, Icon } from "@/components";
 import { MyActivities } from "@/features/events";
+import { MyBuddyActivityOverview } from "@/features/matching";
 
 export function MyActivitiesPage() {
   return (
@@ -9,7 +10,7 @@ export function MyActivitiesPage() {
         <ButtonLink to="/activities/new"><Icon name="plus" size={18} />New activity</ButtonLink>
       </div>
       <MyActivities />
-      <ReservedSlot name="Your matches & plans" owner="Members 4 & 5" description="Waiting requests, active chats and confirmed plans will appear here once matching and chat are integrated." />
+      <MyBuddyActivityOverview />
     </div>
   );
 }

@@ -9,6 +9,36 @@ export type BuddyRequestResult = {
   maxSize?: number;
 };
 
+export type BuddyActivityState = "waiting" | "forming" | "chat" | "confirmed";
+
+export type BuddyActivity = {
+  state: BuddyActivityState;
+  eventId: string;
+  eventTitle: string;
+  eventCategory: string;
+  startsAt: string;
+  venuePublic: string;
+  mode: MatchMode;
+  matchId: string | null;
+  memberCount: number | null;
+  maxSize: number;
+  createdAt: string;
+};
+
+type BuddyActivityRow = {
+  activity_state: BuddyActivityState;
+  event_id: string;
+  event_title: string;
+  event_category: string;
+  starts_at: string;
+  venue_public: string;
+  mode: MatchMode;
+  match_id: string | null;
+  member_count: number | null;
+  max_size: number;
+  created_at: string;
+};
+
 /** Caller's current buddy state for one event (get_my_buddy_status). */
 export type BuddyStatus =
   | { state: "none" }
@@ -50,6 +80,23 @@ export const matchingApi = {
   leaveMatch: (matchId: string) => call<unknown>("leave_match", { p_match_id: matchId }),
   getMyMatch: (matchId: string) => call<BuddyMatchView>("get_my_match", { p_match_id: matchId }),
   getMyBuddyStatus: (eventId: string) => call<BuddyStatus>("get_my_buddy_status", { p_event_id: eventId }),
+  getMyBuddyActivity: async (): Promise<BuddyActivity[]> => {
+    const { data, error } = await supabase.rpc("get_my_buddy_activity");
+    if (error) throw error;
+    return ((data ?? []) as BuddyActivityRow[]).map((row) => ({
+      state: row.activity_state,
+      eventId: row.event_id,
+      eventTitle: row.event_title,
+      eventCategory: row.event_category,
+      startsAt: row.starts_at,
+      venuePublic: row.venue_public,
+      mode: row.mode,
+      matchId: row.match_id,
+      memberCount: row.member_count,
+      maxSize: row.max_size,
+      createdAt: row.created_at,
+    }));
+  },
 };
 
 /** Subscribes to changes on the caller's own match row (RLS-filtered). Returns unsubscribe. */

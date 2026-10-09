@@ -90,8 +90,10 @@ export async function rateEvent(id: string, rating: number, comment?: string) {
   if (error) throw error;
 }
 
-/** Integration stub: wired to Member 5's protected report_event RPC (0004). */
+/** Event details collects free text; the report category stays within 0004's enum. */
 export async function reportEvent(id: string, reason: string) {
-  const { error } = await supabase.rpc("report_event", { p_event_id: id, p_reason: reason });
+  const { error } = await supabase.rpc("report_event", {
+    p_event_id: id, p_reason: "other", p_details: reason.trim(),
+  });
   if (error) throw error;
 }

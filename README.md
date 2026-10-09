@@ -411,7 +411,7 @@ All members paste the shared **master prompt** plus their role prompt from [`PRO
 | **4 — Pair + Group Matching** | `src/features/matching/**`, `0003_matching.sql` | Atomic queue, 1-on-1 and group 3–5, group membership/versioning |
 | **5 — Chat, Reveal & Trust** | `src/features/chat/**`, `0004_chat_safety.sql` | Realtime group/pair chat, unanimous reveal, report/block, reliability/outcomes |
 
-**Dependencies:** Member 1 sets up auth/shared types first. Member 3 supplies events. Member 4 consumes events and foundation block rules. Member 5 consumes the shared `buddy_matches`/`buddy_match_members` model. Apply migrations **0001 → 0002 → 0003 → 0004**.
+**Dependencies:** Member 1 sets up auth/shared types first. Member 3 supplies events. Member 4 consumes events and foundation block rules. Member 5 consumes the shared `buddy_matches`/`buddy_match_members` model. Apply migrations **0001 → 0006**. See [database deployment and recovery](docs/INTEGRATION.md#database-deployment).
 
 **Parallel development:** Use `feat/onboarding`, `feat/events`, `feat/matching`, and `feat/chat`. Agents must not independently rewrite root routing, shared auth, or other members' schema; use PRs and report API contracts to Member 1.
 
@@ -494,7 +494,7 @@ VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_publishable_key
 ```
 
-Deploy server-side functions with secrets managed on the host. The browser publishable key is usable only when authorization/RLS is correct. Migration setup order is **0001, 0002, 0003, 0004**. Populate a **maintained institutional email allowlist**; don't hardcode a few domains without a review process or silently whitelist arbitrary domains.
+Deploy server-side functions with secrets managed on the host. The browser publishable key is usable only when authorization/RLS is correct. Migration setup order is **0001 → 0006**; Vercel does not apply these automatically. See [database deployment and recovery](docs/INTEGRATION.md#database-deployment). Populate a **maintained institutional email allowlist**; don't hardcode a few domains without a review process or silently whitelist arbitrary domains.
 
 **Testing:** Use two browser sessions plus three for the group demo. Seed fictional events and resolved reliability examples marked **SYNTHETIC / DEMO**, not genuine user ratings or attendance. Never invent passing tests.
 
@@ -532,4 +532,4 @@ See [`PROMPT.md`](./PROMPT.md) for the **master prompt and five role-specific co
 
 The app now includes a responsive discovery page, shared warm-neutral design system, desktop/mobile navigation, and accessible student sign-in and private-profile screens. See [`docs/UI.md`](./docs/UI.md) for the component and design handoff.
 
-The public activity cards are explicitly labelled **ideas, not live events**. Real event discovery, matching, chat, and interest onboarding remain teammate-owned integration points. The shared Supabase environment must be configured for account operations; a working UI preview is not evidence that multi-student matching or backend privacy tests have passed.
+The public activity cards are explicitly labelled **ideas, not live events**. Real event discovery, matching, chat, and interest onboarding are connected to the shared Supabase backend and require all repository migrations. The shared Supabase environment must be configured for account operations; a working UI preview is not evidence that multi-student matching or backend privacy tests have passed.

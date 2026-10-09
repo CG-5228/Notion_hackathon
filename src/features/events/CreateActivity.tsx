@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Notice } from "@/components";
+import { backendErrorMessage } from "@/lib/backend-errors";
 import { createActivity } from "./api";
 import { CATEGORIES } from "./types";
 import { validateActivity, type ActivityInput } from "./validation";
@@ -33,7 +34,7 @@ export function CreateActivity({ onCreated }: Props = {}) {
       const r = await createActivity(f);
       if (onCreated) onCreated(r.id, r.inviteHash);
       else navigate(`/events/${r.id}${r.inviteHash ? `?invite=${r.inviteHash}` : ""}`);
-    } catch (x) { setServerErr(x instanceof Error ? x.message : "Could not create the activity."); }
+    } catch (x) { setServerErr(backendErrorMessage(x, "Could not create the activity. Please try again.")); }
     finally { setBusy(false); }
   };
 

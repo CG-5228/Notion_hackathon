@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button, ButtonLink, Notice, Spinner } from "@/components";
+import { backendErrorMessage } from "@/lib/backend-errors";
 import { listEvents } from "./api";
 import { CATEGORIES, type EventDetail, type EventFilters } from "./types";
 import { GoingCount, KindBadge, fmtDate, inputClass } from "./components/Labels";
@@ -24,7 +25,7 @@ export function EventsFeed({ onOpenEvent, onCreateActivity }: Props = {}) {
       setError(null);
       listEvents(filters)
         .then((d) => alive && setEvents(d))
-        .catch((e) => alive && setError(e.message ?? "Could not load events"));
+        .catch((e) => alive && setError(backendErrorMessage(e, "Could not load events. Please try again.")));
     }, 250);
     return () => { alive = false; clearTimeout(t); };
   }, [filters]);

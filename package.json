@@ -9,7 +9,9 @@
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:bundle": "node scripts/backend-repair.mjs",
+    "db:apply": "node scripts/deploy-backend.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

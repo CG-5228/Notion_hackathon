@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Notice, Spinner } from "@/components";
+import { backendErrorMessage } from "@/lib/backend-errors";
 import { listMyActivities } from "./api";
 import type { MyActivity } from "./types";
 import { fmtDate } from "./components/Labels";
@@ -16,7 +17,8 @@ export function MyActivities({ onOpenEvent }: Props = {}) {
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    listMyActivities().then((d) => alive && setItems(d)).catch((e) => alive && setErr(e.message));
+    listMyActivities().then((d) => alive && setItems(d))
+      .catch((e) => alive && setErr(backendErrorMessage(e, "Could not load your activities. Please try again.")));
     return () => { alive = false; };
   }, []);
 

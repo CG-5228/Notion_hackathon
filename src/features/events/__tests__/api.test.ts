@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/supabase", () => ({ supabase: { rpc } }));
-import { listEvents, setGoing } from "../api";
+import { createActivity, listEvents, listMyActivities, reportEvent, setGoing } from "../api";
 beforeEach(() => { rpc.mockReset(); rpc.mockResolvedValue({ data: [], error: null }); });
 describe("event API date filters", () => {
   it("includes the selected final day's evening in the local calendar", async () => {
@@ -28,5 +28,40 @@ describe("event API date filters", () => {
     rpc.mockResolvedValue({ data: 3, error: null });
     expect(await setGoing("event-id", true, "invite-token")).toBe(3);
     expect(rpc).toHaveBeenCalledWith("rsvp_to_event", { p_event_id: "event-id", p_going: true, p_invite: "invite-token" });
+  });
+});
+
+describe("event backend contracts", () => {
+  it("sends a valid report category and preserves the student's explanation", async () => {
+    rpc.mockResolvedValue({ data: { received: true }, error: null });
+    await reportEvent("event-id", "  Venue is a private residence  ");
+    expect(rpc).toHaveBeenCalledWith("report_event", {
+      p_event_id: "event-id", p_reason: "other", p_details: "Venue is a private residence",
+    });
+  });
+
+  it("does not swallow a failed report", async () => {
+    const error = { code: "42501", message: "Verified student account required" };
+    rpc.mockResolvedValue({ data: null, error });
+    await expect(reportEvent("event-id", "Unsafe venue")).rejects.toBe(error);
+  });
+
+  it("uses the real activity creation signature and preserves the private invite link", async () => {
+    rpc.mockResolvedValue({ data: [{ id: "new-activity", invite_hash: "private-invite" }], error: null });
+    await expect(createActivity({
+      title: "Campus coffee", description: "Meet at the café", category: "coffee",
+      startsAt: "2099-10-20T12:00:00Z", endsAt: "", venuePublic: "Library café", visibility: "invite_only",
+    })).resolves.toEqual({ id: "new-activity", inviteHash: "private-invite" });
+    expect(rpc).toHaveBeenCalledWith("create_activity", {
+      p_title: "Campus coffee", p_description: "Meet at the café", p_category: "coffee",
+      p_starts_at: "2099-10-20T12:00:00.000Z", p_ends_at: null,
+      p_venue_public: "Library café", p_visibility: "invite_only",
+    });
+  });
+
+  it("loads only the current student's activity RPC without a user ID argument", async () => {
+    rpc.mockResolvedValue({ data: [], error: null });
+    await expect(listMyActivities()).resolves.toEqual([]);
+    expect(rpc).toHaveBeenCalledWith("get_my_activities");
   });
 });
