@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { COPY } from "@/types";
@@ -28,7 +28,35 @@ function view(over: Partial<ChatMatchView> = {}): ChatMatchView {
 const msgs: ChatMessage[] = [
   { id: "1", kind: "user", pseudonym: "Amber Fox", isOwn: false, body: "&lt;img src=x onerror=alert(1)&gt;", createdAt: "2026-01-01" },
 ];
+const revealedProfile = { displayName: "Nia Calder", university: "Westmere Polytechnic" };
 const ui = () => render(<MemoryRouter><BuddyChat matchId="m1" /></MemoryRouter>);
+
+function waitingForConsent(status: "chatting" | "locked"): ChatMatchView {
+  return view({
+    status,
+    iAgreed: false,
+    revealedProfiles: [revealedProfile],
+    participants: [
+      { pseudonym: "Teal Otter", agreed: false, reliabilityBand: "new", isMe: true },
+      { pseudonym: "Amber Fox", agreed: true, reliabilityBand: "generally_reliable", isMe: false },
+      { pseudonym: "Quiet Heron", agreed: true, reliabilityBand: "new", isMe: false },
+    ],
+  });
+}
+
+function revealedView(over: Partial<ChatMatchView> = {}): ChatMatchView {
+  return view({
+    status: "revealed",
+    agreedCount: 3,
+    revealedProfiles: [revealedProfile],
+    participants: [
+      { pseudonym: "Teal Otter", agreed: true, reliabilityBand: "new", isMe: true },
+      { pseudonym: "Amber Fox", agreed: true, reliabilityBand: "generally_reliable", isMe: false },
+      { pseudonym: "Quiet Heron", agreed: true, reliabilityBand: "new", isMe: false },
+    ],
+    ...over,
+  });
+}
 
 describe("BuddyChat", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -51,6 +79,77 @@ describe("BuddyChat", () => {
     api.getMessages.mockResolvedValue([]);
     ui();
     expect(await screen.findByText(COPY.pairWarning)).toBeInTheDocument();
+  });
+
+  it.each(["chatting", "locked"] as const)(
+    "reveals the buddy only after a successful agreement from %s",
+    async (status) => {
+      let resolveAgreement!: (match: ChatMatchView) => void;
+      const agreement = new Promise<ChatMatchView>((resolve) => { resolveAgreement = resolve; });
+      api.getMatch.mockResolvedValue(waitingForConsent(status));
+      api.getMessages.mockResolvedValue([]);
+      api.agreeToGo.mockReturnValue(agreement);
+      ui();
+
+      expect(await screen.findByText("2 of 3 agreed")).toBeInTheDocument();
+      expect(screen.queryByText(revealedProfile.displayName)).not.toBeInTheDocument();
+      expect(screen.queryByText(revealedProfile.university)).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /Open the plan/ })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Agree to Go" }));
+      expect(api.agreeToGo).toHaveBeenCalledWith("m1", 4);
+      expect(screen.queryByText(revealedProfile.displayName)).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /Open the plan/ })).not.toBeInTheDocument();
+
+      await act(async () => {
+        resolveAgreement(revealedView());
+        await agreement;
+      });
+
+      expect(await screen.findByRole("region", { name: "Your buddies" })).toBeInTheDocument();
+      expect(screen.getByRole("list", { name: "Revealed buddy profiles" })).toBeInTheDocument();
+      expect(screen.getByText(revealedProfile.displayName)).toBeInTheDocument();
+      expect(screen.getByText(revealedProfile.university)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Open the plan/ })).toHaveAttribute("href", "/plans/m1");
+      expect(screen.getByRole("list", { name: "Messages" })).toHaveTextContent(
+        "No messages yet. Say hi — your plan starts here.",
+      );
+      expect(screen.getByRole("list", { name: "Messages" })).not.toHaveTextContent("names stay hidden");
+    },
+  );
+
+  it("keeps profiles and the plan link hidden when agreement fails", async () => {
+    api.getMatch.mockResolvedValue(waitingForConsent("locked"));
+    api.getMessages.mockResolvedValue([]);
+    api.agreeToGo.mockRejectedValue(new Error("network unavailable"));
+    ui();
+
+    expect(await screen.findByText("2 of 3 agreed")).toBeInTheDocument();
+    expect(screen.queryByText(revealedProfile.displayName)).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Open the plan/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Agree to Go" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Agree to Go" })).toBeEnabled());
+
+    expect(screen.queryByText(revealedProfile.displayName)).not.toBeInTheDocument();
+    expect(screen.queryByText(revealedProfile.university)).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Open the plan/ })).not.toBeInTheDocument();
+  });
+
+  it("labels a revealed pair as Your buddy", async () => {
+    const participants = view().participants.slice(0, 2).map((participant) => ({ ...participant, agreed: true }));
+    api.getMatch.mockResolvedValue(revealedView({
+      mode: "pair",
+      memberCount: 2,
+      maxSize: 2,
+      agreedCount: 2,
+      participants,
+    }));
+    api.getMessages.mockResolvedValue([]);
+    ui();
+
+    expect(await screen.findByRole("region", { name: "Your buddy" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Your buddies" })).not.toBeInTheDocument();
   });
 
   it("keeps chat closed for a forming group and never loads messages", async () => {
