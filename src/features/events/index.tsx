@@ -1,14 +1,30 @@
-// RESERVED ENTRYPOINTS — owned by Member 3. Replace implementations; keep export names and props.
-import { ReservedSlot } from "@/components";
+// Member 3 entrypoints — export names and props match docs/CONTRACTS.md.
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { EventsFeed as Feed } from "./EventsFeed";
+import { ActivityDetail as Detail } from "./ActivityDetail";
+import { CreateActivity as Create } from "./CreateActivity";
+import { MyActivities as Mine } from "./MyActivities";
+
 export function EventsFeed() {
-  return <ReservedSlot name="Events feed" owner="Member 3"
-    description="Curated public events and student activities with anonymous ‘going’ counts — never attendee names." />;
+  const nav = useNavigate();
+  return <Feed onOpenEvent={(id) => nav(`/events/${id}`)} onCreateActivity={() => nav("/activities/new")} />;
 }
+
 export function ActivityDetail({ eventId }: { eventId: string }) {
-  return <ReservedSlot name="Event details" owner="Member 3"
-    description={`Details, organiser link, RSVP and report for event ${eventId}.`} />;
+  const nav = useNavigate();
+  const [params] = useSearchParams();
+  return <Detail eventId={eventId} inviteHash={params.get("invite")} onFindBuddy={(id) => nav(`/find-buddy/${id}`)} />;
 }
+
 export function CreateActivity() {
-  return <ReservedSlot name="Create an activity" owner="Member 3"
-    description="Campus-visible or invite-only activities at public meeting points — never home addresses." />;
+  const nav = useNavigate();
+  return <Create onCreated={(id, hash) => nav(`/events/${id}${hash ? `?invite=${hash}` : ""}`)} />;
 }
+
+export function MyActivities() {
+  const nav = useNavigate();
+  return <Mine onOpenEvent={(id) => nav(`/events/${id}`)} />;
+}
+
+export { getEvent, listEvents, setGoing, reportEvent } from "./api";
+export type { EventDetail, EventFilters, MyActivity } from "./types";

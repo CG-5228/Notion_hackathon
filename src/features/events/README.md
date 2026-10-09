@@ -8,7 +8,7 @@ Event discovery, student-created activities, privacy-safe RSVP counts, and ratin
 - `seed/demo_events.sql`: three clearly labelled SYNTHETIC events with no prefilled RSVPs
 
 ## Dependencies on 0001 (Member 1)
-- `public.profiles(id, university_id)`, `public.universities(id)`
+- `public.profiles(user_id, university_id)`, `public.universities(id)`
 - `public.is_verified_student(uid uuid) returns boolean`. If the name differs, edit only `fyb_is_verified` in 0002.
 - `@/lib/supabase` exporting `supabase`
 
