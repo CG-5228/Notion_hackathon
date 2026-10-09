@@ -38,13 +38,15 @@ export function OnboardingScreen() {
 
   useEffect(() => {
     if (!userId) return;
+    const savedAnswers = answerStore.load(userId);
+    setAnswers(Object.fromEntries(savedAnswers.map(({ questionId, answer }) => [questionId, answer])));
     loadMyInterests(userId)
       .then((rows) => {
         setSelected(rows.map((r) => r.tag));
         setShareable(new Set(rows.filter((r) => r.shareable).map((r) => r.tag)));
       })
       .catch(() => undefined);
-  }, [userId]);
+  }, [answerStore, userId]);
 
   const toggle = (t: InterestTag) => setSelected((s) => (s.includes(t) ? s.filter((x) => x !== t) : [...s, t]));
 
