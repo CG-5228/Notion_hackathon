@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Card, Notice, Spinner } from "@/components";
 import { COPY } from "@/types";
@@ -21,6 +21,8 @@ export function ActivityDetail({ eventId, inviteHash, onFindBuddy }: Props) {
   const [e, setE] = useState<EventDetail | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const reportInFlight = useRef(false);
+  const [reportBusy, setReportBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [reportMsg, setReportMsg] = useState<string | null>(null);
@@ -28,6 +30,10 @@ export function ActivityDetail({ eventId, inviteHash, onFindBuddy }: Props) {
   useEffect(() => {
     let alive = true;
     setE(undefined);
+    setErr(null);
+    setReportMsg(null);
+    setReportOpen(false);
+    setReason("");
     getEvent(eventId, invite)
       .then((d) => alive && setE(d))
       .catch((x) => { if (alive) { setErr(x.message); setE(null); } });
@@ -49,8 +55,25 @@ export function ActivityDetail({ eventId, inviteHash, onFindBuddy }: Props) {
   const findBuddy = () => (onFindBuddy ? onFindBuddy(e.id) : navigate(`/find-buddy/${e.id}`));
 
   const submitReport = async () => {
-    try { await reportEvent(e.id, reason.trim()); setReportMsg("Report sent privately to moderators."); setReportOpen(false); }
-    catch { setReportMsg("Reporting will be available once safety tools are connected."); }
+    if (reportInFlight.current || reason.trim().length < 5) return;
+    reportInFlight.current = true;
+    setReportBusy(true);
+    setReportMsg(null);
+    try {
+      await reportEvent(e.id, reason.trim());
+      setReportMsg("Report submitted privately. This does not mean a moderator is monitoring live.");
+      setReportOpen(false);
+      setReason("");
+    } catch (error) {
+      const unavailable = typeof error === "object" && error !== null && "code" in error
+        && (error.code === "PGRST202" || error.code === "42883");
+      setReportMsg(unavailable
+        ? "Reporting is not connected yet. Your report has not been sent."
+        : "Your report could not be sent. Your reason is saved here; please try again.");
+    } finally {
+      reportInFlight.current = false;
+      setReportBusy(false);
+    }
   };
 
   return (
@@ -77,6 +100,7 @@ export function ActivityDetail({ eventId, inviteHash, onFindBuddy }: Props) {
         {e.ratingCount > 0 && e.ratingAvg !== null && (
           <p>Rated {e.ratingAvg.toFixed(1)}/5 from {e.ratingCount} participant rating{e.ratingCount === 1 ? "" : "s"}.</p>
         )}
+        <p className="text-xs text-ink-muted">Participant ratings do not establish real-world safety.</p>
         <p className="text-xs text-ink-muted">{COPY.safetyTip} {COPY.attendanceDisclaimer}</p>
       </Card>
 
@@ -92,17 +116,17 @@ export function ActivityDetail({ eventId, inviteHash, onFindBuddy }: Props) {
       {err && <Notice tone="error">{err}</Notice>}
 
       <div>
-        <button type="button" onClick={() => setReportOpen((o) => !o)} className="text-sm font-semibold text-ink-soft underline">
+        <Button variant="outline" disabled={reportBusy} onClick={() => setReportOpen((o) => !o)}>
           Report this event
-        </button>
+        </Button>
         {reportOpen && (
           <div className="mt-2 space-y-2">
-            <textarea value={reason} onChange={(x) => setReason(x.target.value)} maxLength={500} rows={3}
+            <textarea aria-label="Report reason" disabled={reportBusy} value={reason} onChange={(x) => setReason(x.target.value)} maxLength={500} rows={3}
               placeholder="What's wrong with this event?" className={inputClass} />
-            <Button variant="danger" disabled={reason.trim().length < 5} onClick={submitReport}>Send report</Button>
+            <Button variant="danger" disabled={reportBusy || reason.trim().length < 5} onClick={submitReport}>{reportBusy ? "Sending report…" : "Send report"}</Button>
           </div>
         )}
-        {reportMsg && <p className="mt-2 text-sm text-ink-muted">{reportMsg}</p>}
+        {reportMsg && <p role="status" className="mt-2 text-sm text-ink-muted">{reportMsg}</p>}
       </div>
     </article>
   );

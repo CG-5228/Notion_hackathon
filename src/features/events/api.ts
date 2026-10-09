@@ -22,12 +22,21 @@ const toDetail = (r: Row): EventDetail => ({
   ratingAvg: r.rating_avg === null ? null : Number(r.rating_avg),
 });
 
+/** Date-only filters follow the student's local calendar, including the final day. */
+function filterDate(value: string, endOfDay = false): string {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}`)
+    : new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error("Choose a valid filter date.");
+  return date.toISOString();
+}
+
 export async function listEvents(f: EventFilters = {}): Promise<EventDetail[]> {
   const { data, error } = await supabase.rpc("get_discoverable_events", {
     p_search: f.search?.trim() || null,
     p_category: f.category || null,
-    ...(f.from ? { p_from: new Date(f.from).toISOString() } : {}),
-    p_to: f.to ? new Date(f.to).toISOString() : null,
+    ...(f.from ? { p_from: filterDate(f.from) } : {}),
+    p_to: f.to ? filterDate(f.to, true) : null,
   });
   if (error) throw error;
   return (data as Row[]).map(toDetail);
