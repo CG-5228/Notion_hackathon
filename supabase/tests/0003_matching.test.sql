@@ -1,5 +1,5 @@
 -- Security + behaviour tests for 0003_matching.sql.
--- Run after 0001 + 0002 (+ optionally 0004):
+-- Run after 0001 + 0002 (+ optionally 0004); fixtures use the real 0002 events schema:
 --   psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/0003_matching.test.sql
 -- Runs in one transaction and rolls back. Any failed assertion raises.
 begin;
@@ -27,7 +27,9 @@ insert into t_ids values ('A','00000000-0000-0000-0000-0000000000a1'),('B','0000
   ('EV1','10000000-0000-0000-0000-000000000001'),('EV2','10000000-0000-0000-0000-000000000002'),
   ('EV3','10000000-0000-0000-0000-000000000003'),('EV4','10000000-0000-0000-0000-000000000004');
 
-insert into public.events (id) select id from t_ids where k like 'EV%';
+insert into public.events (id, title, category, starts_at, venue_public, event_kind, visibility)
+  select id, 'Test event ' || k, 'coffee', now() + interval '1 day', 'Campus café entrance', 'student_created', 'public'
+  from t_ids where k like 'EV%';
 insert into public.event_rsvps (event_id, user_id, status)
   select e.id, u.id, 'going' from t_ids e cross join t_ids u where e.k like 'EV%' and u.k not like 'EV%';
 

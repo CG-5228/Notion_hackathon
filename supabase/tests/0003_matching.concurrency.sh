@@ -12,7 +12,9 @@ q() { psql "$DB_URL" -v ON_ERROR_STOP=1 -qAt -c "$1"; }
 
 q "delete from auth.users where email like 'conc%@demo.findyourbuddy.test';
    delete from public.events where id in ('$EV','$EV2');
-   insert into public.events(id) values ('$EV'),('$EV2');"
+   insert into public.events(id, title, category, starts_at, venue_public, event_kind, visibility)
+   values ('$EV', 'Concurrency group event', 'coffee', now() + interval '1 day', 'Campus café entrance', 'student_created', 'public'),
+          ('$EV2', 'Concurrency pair event', 'coffee', now() + interval '1 day', 'Campus café entrance', 'student_created', 'public');"
 for i in $(seq 1 $N); do
   q "insert into auth.users(id,email,email_confirmed_at) values (gen_random_uuid(),'conc$i@demo.findyourbuddy.test',now());"
 done
