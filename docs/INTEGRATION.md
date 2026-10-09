@@ -11,7 +11,7 @@ npm run dev               # http://localhost:5173
 npm run typecheck && npm test && npm run build
 ```
 
-## Database (apply in order: 0001 → 0002 → 0003 → 0004)
+## Database (apply in order: 0001 → 0002 → 0003 → 0004 → 0005)
 ```bash
 supabase link --project-ref <ref>
 supabase db push                      # applies supabase/migrations/*
@@ -28,6 +28,10 @@ Supabase dashboard settings:
 4. Seeded domains (TCD, UCD, DCU, UCC, Galway, UL, Maynooth, TU Dublin) **must be checked by an admin** before launch.
 
 ## Demo accounts (no global bypass)
+For the five explicitly requested DCU test accounts, see [the admin-only provisioning runbook](./DEMO_ACCOUNTS.md). It uses password sign-in, not Google OAuth. Normal email signup still requires confirmation; Supabase confirmation emails do not depend on Google OAuth.
+
+The DCU path requires migration `0005_demo_accounts.sql` (foundation-only dependency) and an explicitly confirmed, isolated demo project. Trusted admin metadata marks these synthetic users, and the app displays a persistent demo warning. Never put its service-role credential in a `VITE_` variable or commit/share the private credentials file.
+
 Domain `demo.findyourbuddy.test` → "Demo University (not real)". Only an admin can create confirmed demo users: Dashboard → Authentication → Add user → *Auto confirm user*. They carry `is_demo = true`. Disable before production:
 `update public.university_domains set active = false where domain = 'demo.findyourbuddy.test';`
 
