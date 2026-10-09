@@ -527,3 +527,9 @@ The entire app addresses **one real friction in student life: turning the intent
 **Specification / hackathon prototype.** Update this section when implementation is complete: deployed URL, repository, screenshots, contributors, tested features and known limitations. Do not suggest that the app guarantees safety, attendance or medical outcomes.
 
 See [`PROMPT.md`](./PROMPT.md) for the **master prompt and five role-specific copy/paste agent prompts**.
+
+### Member 1 UI foundation
+
+The app now includes a responsive discovery page, shared warm-neutral design system, desktop/mobile navigation, and accessible student sign-in and private-profile screens. See [`docs/UI.md`](./docs/UI.md) for the component and design handoff.
+
+The public activity cards are explicitly labelled **ideas, not live events**. Real event discovery, matching, chat, and interest onboarding remain teammate-owned integration points. The shared Supabase environment must be configured for account operations; a working UI preview is not evidence that multi-student matching or backend privacy tests have passed.
