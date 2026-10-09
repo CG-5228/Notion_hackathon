@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* Find Your Buddy design system — warm navy, mint, lilac, neutrals. Use tokens, not raw colors. */
+@theme {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: oklch(0.24 0.06 268);          /* warm navy */
+  --color-ink-soft: oklch(0.34 0.07 268);
+  --color-ink-muted: oklch(0.52 0.04 268);
+  --color-paper: oklch(0.985 0.008 85);       /* warm off-white */
+  --color-sand: oklch(0.95 0.015 85);
+  --color-line: oklch(0.9 0.015 270);
+  --color-mint: oklch(0.86 0.12 168);
+  --color-mint-deep: oklch(0.62 0.12 168);
+  --color-lilac: oklch(0.82 0.09 295);
+  --color-lilac-deep: oklch(0.58 0.14 295);
+  --color-sun: oklch(0.9 0.12 85);
+  --color-warn-bg: oklch(0.96 0.05 75);
+  --color-warn-ink: oklch(0.42 0.11 55);
+  --color-danger: oklch(0.58 0.2 25);
+
+  --radius-card: 1.5rem;
+  --shadow-soft: 0 1px 2px oklch(0.24 0.06 268 / 0.06), 0 12px 32px -12px oklch(0.24 0.06 268 / 0.18);
+  --shadow-lift: 0 24px 60px -20px oklch(0.24 0.06 268 / 0.35);
+
+  --animate-float: float 9s ease-in-out infinite;
+  --animate-rise: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(0) } 50% { transform: translateY(-14px) rotate(3deg) } }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-paper font-sans text-ink antialiased; }
+  h1, h2, h3 { @apply font-display tracking-tight; }
+  :focus-visible { outline: 3px solid var(--color-lilac-deep); outline-offset: 2px; border-radius: 0.5rem; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+}
+
+@utility glass { background: oklch(1 0 0 / 0.72); backdrop-filter: blur(14px); }
+@utility bg-aurora {
+  background:
+    radial-gradient(40rem 28rem at 12% 8%, oklch(0.86 0.12 168 / 0.55), transparent 60%),
+    radial-gradient(36rem 26rem at 92% 12%, oklch(0.82 0.09 295 / 0.6), transparent 60%),
+    radial-gradient(30rem 22rem at 60% 100%, oklch(0.9 0.12 85 / 0.45), transparent 60%),
+    var(--color-paper);
+}
+@utility grain {
+  background-image: radial-gradient(oklch(0.24 0.06 268 / 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
