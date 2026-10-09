@@ -1,9 +1,9 @@
 -- Security / policy tests for 0004 (Member 5). Runs in a transaction and rolls back.
 -- Against Supabase:  psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/0004_chat_safety.test.sql
 -- Locally:           bash src/features/chat/__tests__/run-sql-tests.sh
--- Fixtures write 0002/0003 columns directly as the owner (id, title, starts_at,
--- venue_public / id, event_id, mode, status, max_size, membership_version /
--- match_id, user_id, pseudonym, left_at).
+-- Fixtures write the real 0002/0003 columns directly as the owner (events: id, title, starts_at,
+-- venue_public, category, event_kind, visibility / buddy_matches: id, event_id, mode, status,
+-- max_size, membership_version / buddy_match_members: match_id, user_id, pseudonym, left_at).
 \set ON_ERROR_STOP on
 begin;
 
@@ -34,22 +34,28 @@ insert into auth.users (id, email, email_confirmed_at) values
 update public.profiles set display_name = initcap(split_part(au.email, '@', 1)), age_confirmed = true
   from auth.users au where au.id = profiles.user_id;
 
-insert into public.events (id, title, starts_at, venue_public) values
-  ('10000000-0000-0000-0000-000000000001', 'Future gig', now() + interval '1 day', 'Main gate'),
-  ('10000000-0000-0000-0000-000000000002', 'Past hackathon', now() - interval '1 hour', 'Library'),
-  ('10000000-0000-0000-0000-000000000003', 'Soon coffee', now() + interval '1 hour', 'Cafe');
+insert into public.events (id, title, starts_at, venue_public, category, event_kind, visibility) values
+  ('10000000-0000-0000-0000-000000000001', 'Future gig', now() + interval '1 day', 'Main gate', 'culture', 'student_created', 'public'),
+  ('10000000-0000-0000-a001-000000000001', 'Future gig 2', now() + interval '1 day', 'Main gate', 'culture', 'student_created', 'public'),
+  ('10000000-0000-0000-a002-000000000001', 'Future gig 3', now() + interval '1 day', 'Main gate', 'culture', 'student_created', 'public'),
+  ('10000000-0000-0000-a003-000000000001', 'Future gig 4', now() + interval '1 day', 'Main gate', 'culture', 'student_created', 'public'),
+  ('10000000-0000-0000-a004-000000000001', 'Future gig 5', now() + interval '1 day', 'Main gate', 'culture', 'student_created', 'public'),
+  ('10000000-0000-0000-0000-000000000002', 'Past hackathon', now() - interval '1 hour', 'Library', 'hackathon', 'student_created', 'public'),
+  ('10000000-0000-0000-0000-000000000003', 'Soon coffee', now() + interval '1 hour', 'Cafe', 'coffee', 'student_created', 'public');
 
+-- Matches sit on distinct events: 0003 allows one active placement per (event, user).
 insert into public.buddy_matches (id, event_id, mode, status, max_size) values
   ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'pair',  'chatting', 2),
-  ('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'group', 'chatting', 5),
-  ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', 'group', 'chatting', 5),
-  ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001', 'pair',  'chatting', 2),
+  ('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-a001-000000000001', 'group', 'chatting', 5),
+  ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-a002-000000000001', 'group', 'chatting', 5),
+  ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-a003-000000000001', 'pair',  'chatting', 2),
   ('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000002', 'pair',  'revealed', 2),
   ('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000002', 'pair',  'revealed', 2),
-  ('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000001', 'pair',  'revealed', 2),
+  ('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-a004-000000000001', 'pair',  'revealed', 2),
   ('20000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000003', 'pair',  'revealed', 2);
 
-insert into public.buddy_match_members (match_id, user_id, pseudonym) values
+insert into public.buddy_match_members (match_id, event_id, user_id, pseudonym)
+select v.match_id::uuid, bm.event_id, v.user_id::uuid, v.pseudonym from (values
   ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000a1', 'Teal Otter'),
   ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000b2', 'Amber Fox'),
   ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000000a1', 'G2 One'),
@@ -68,7 +74,7 @@ insert into public.buddy_match_members (match_id, user_id, pseudonym) values
   ('20000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-0000000000a1', 'P7 One'),
   ('20000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-0000000000b2', 'P7 Two'),
   ('20000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-0000000000a1', 'P8 One'),
-  ('20000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-0000000000b2', 'P8 Two');
+  ('20000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-0000000000b2', 'P8 Two')) as v(match_id, user_id, pseudonym) join public.buddy_matches bm on bm.id = v.match_id::uuid;
 -- revealed fixtures need matching N/N agreements
 insert into public.buddy_agreements (match_id, user_id, membership_version)
   select match_id, user_id, 1 from public.buddy_match_members
@@ -149,8 +155,9 @@ do $$ begin
   if exists (select 1 from public.buddy_agreements where match_id = '20000000-0000-0000-0000-000000000002')
     then raise exception 'FAIL: stale agreements kept'; end if;
 end $$;
-insert into public.buddy_match_members (match_id, user_id, pseudonym)
-  values ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000000e5', 'G2 Four');
+insert into public.buddy_match_members (match_id, event_id, user_id, pseudonym)
+select v.match_id::uuid, bm.event_id, v.user_id::uuid, v.pseudonym from (values
+  ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000000e5', 'G2 Four')) as v(match_id, user_id, pseudonym) join public.buddy_matches bm on bm.id = v.match_id::uuid;
 update public.buddy_matches set status = 'chatting' where id = '20000000-0000-0000-0000-000000000002';  -- Member 4 transition
 select pg_temp.act('00000000-0000-0000-0000-0000000000a1');
 do $$ begin
@@ -173,34 +180,8 @@ do $$ begin
   perform pg_temp.expect($q$select public.get_revealed_profiles('20000000-0000-0000-0000-000000000002')$q$, '42501', 'removed member reveal');
 end $$;
 
--- ===== 5. Block inside a group and a pair =====
-select pg_temp.act('00000000-0000-0000-0000-0000000000b2');
-select public.send_message('20000000-0000-0000-0000-000000000003', 'hello group');
-select pg_temp.act('00000000-0000-0000-0000-0000000000a1');
-do $$ declare v jsonb; begin
-  v := public.block_user('G3 Two', '20000000-0000-0000-0000-000000000003');
-  if not (v->>'youLeftMatch')::boolean then raise exception 'FAIL: blocker not separated'; end if;
-  perform pg_temp.expect($q$select public.get_match_messages('20000000-0000-0000-0000-000000000003')$q$, '42501', 'blocker still reads group');
-  if exists (select 1 from public.match_activity where match_id = '20000000-0000-0000-0000-000000000003')
-    then raise exception 'FAIL: blocker still receives realtime'; end if;
-end $$;
-select pg_temp.owner();
-do $$ begin
-  if not public.is_blocked_pair('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b2')
-    then raise exception 'FAIL: block not stored (future matching uses is_blocked_pair)'; end if;
-  if (select membership_version from public.buddy_matches where id = '20000000-0000-0000-0000-000000000003') <> 2
-    then raise exception 'FAIL: group block did not bump version'; end if;
-end $$;
-select pg_temp.act('00000000-0000-0000-0000-0000000000c3');
-do $$ begin
-  perform public.block_user('P4 Two', '20000000-0000-0000-0000-000000000004');
-end $$;
-select pg_temp.act('00000000-0000-0000-0000-0000000000d4');
-do $$ begin
-  perform pg_temp.expect($q$select public.send_message('20000000-0000-0000-0000-000000000004', 'still there?')$q$, '55000', 'blocked pair can still talk');
-end $$;
-
--- ===== 6. Report by pseudonym resolves server-side, reporter learns nothing =====
+-- ===== 5. Report by pseudonym resolves server-side, reporter learns nothing =====
+-- (runs before the block test: 0003's block trigger closes the pair, after which neither side is a member)
 select pg_temp.act('00000000-0000-0000-0000-0000000000c3');
 do $$ declare v jsonb; begin
   v := public.report_user('P4 Two', '20000000-0000-0000-0000-000000000004', 'harassment', 'rude');
@@ -212,7 +193,7 @@ do $$ begin
     then raise exception 'FAIL: report target not resolved'; end if;
 end $$;
 
--- ===== 7. One "did not meet" never penalises; corroborated attendance resolves =====
+-- ===== 6. One "did not meet" never penalises; corroborated attendance resolves =====
 select pg_temp.act('00000000-0000-0000-0000-0000000000a1');
 select public.submit_meetup_outcome('20000000-0000-0000-0000-000000000005', 'did_not_meet');
 select pg_temp.act('00000000-0000-0000-0000-0000000000c3');
@@ -237,7 +218,7 @@ do $$ begin
   perform pg_temp.expect($q$select public.submit_meetup_outcome('20000000-0000-0000-0000-000000000007', 'attended')$q$, '55000', 'check-in before start');
 end $$;
 
--- ===== 8. Cancellations: advance neutral, late pending =====
+-- ===== 7. Cancellations: advance neutral, late pending =====
 select pg_temp.act('00000000-0000-0000-0000-0000000000a1');
 do $$ declare v jsonb; begin
   v := public.cancel_confirmed_plan('20000000-0000-0000-0000-000000000007', 'exam moved');
@@ -255,9 +236,9 @@ do $$ declare r record; begin
   if r.sample <> 0 then raise exception 'FAIL: cancellations counted in score (sample %)', r.sample; end if;
 end $$;
 
--- ===== 9. Score threshold: 0/1/2 -> no number; 3 -> number; excused excluded =====
-insert into public.buddy_matches (id, event_id, mode, status) select ('30000000-0000-0000-0000-00000000000' || g)::uuid,
-  '10000000-0000-0000-0000-000000000002', 'pair', 'closed' from generate_series(1, 4) g;
+-- ===== 8. Score threshold: 0/1/2 -> no number; 3 -> number; excused excluded =====
+insert into public.buddy_matches (id, event_id, mode, status, max_size) select ('30000000-0000-0000-0000-00000000000' || g)::uuid,
+  '10000000-0000-0000-0000-000000000002', 'pair', 'closed', 2 from generate_series(1, 4) g;
 insert into public.meetup_outcomes (match_id, user_id, kind, resolution, is_demo) values
   ('30000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000e5', 'attended', 'resolved', true),
   ('30000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000000e5', 'attended', 'resolved', true),
@@ -281,7 +262,7 @@ do $$ declare v jsonb; begin
   if v - 'band' - 'sampleCount' <> '{}'::jsonb then raise exception 'FAIL: summary leaks detail %', v; end if;
 end $$;
 
--- ===== 10. Moderator review is restricted and audited =====
+-- ===== 9. Moderator review is restricted and audited =====
 select pg_temp.owner();
 insert into public.moderators (user_id) values ('00000000-0000-0000-0000-0000000000c3');
 select pg_temp.act('00000000-0000-0000-0000-0000000000c3');
@@ -295,6 +276,41 @@ select pg_temp.owner();
 do $$ begin
   if not exists (select 1 from public.outcome_audit where actor_id = '00000000-0000-0000-0000-0000000000c3' and new_resolution = 'resolved')
     then raise exception 'FAIL: moderator action not audited'; end if;
+end $$;
+
+-- ===== 10. Block inside a group and a pair =====
+-- Runs last: 0003's block trigger separates EVERY shared active match (including revealed past-event pairs),
+-- so later check-ins by the blocker would fail with 'not a member'.
+select pg_temp.act('00000000-0000-0000-0000-0000000000b2');
+select public.send_message('20000000-0000-0000-0000-000000000003', 'hello group');
+select pg_temp.act('00000000-0000-0000-0000-0000000000a1');
+do $$ declare v jsonb; begin
+  v := public.block_user('G3 Two', '20000000-0000-0000-0000-000000000003');
+  if not (v->>'youLeftMatch')::boolean then raise exception 'FAIL: blocker not separated'; end if;
+  perform pg_temp.expect($q$select public.get_match_messages('20000000-0000-0000-0000-000000000003')$q$, '42501', 'blocker still reads group');
+  if exists (select 1 from public.match_activity where match_id = '20000000-0000-0000-0000-000000000003')
+    then raise exception 'FAIL: blocker still receives realtime'; end if;
+end $$;
+select pg_temp.owner();
+do $$ begin
+  if not public.is_blocked_pair('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b2')
+    then raise exception 'FAIL: block not stored (future matching uses is_blocked_pair)'; end if;
+  if (select membership_version from public.buddy_matches where id = '20000000-0000-0000-0000-000000000003') <> 2
+    then raise exception 'FAIL: group block did not bump version'; end if;
+end $$;
+select pg_temp.act('00000000-0000-0000-0000-0000000000c3');
+do $$ begin
+  perform public.block_user('P4 Two', '20000000-0000-0000-0000-000000000004');
+end $$;
+select pg_temp.act('00000000-0000-0000-0000-0000000000d4');
+do $$ begin
+  -- 55000 = closed by 0004; 42501 = already separated by 0003's block trigger (no longer a member).
+  begin
+    perform public.send_message('20000000-0000-0000-0000-000000000004', 'still there?');
+    raise exception 'FAIL: blocked pair can still talk';
+  exception when others then
+    if sqlstate not in ('55000', '42501') then raise; end if;
+  end;
 end $$;
 
 select 'ALL 0004 SECURITY TESTS PASSED' as result;

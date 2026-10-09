@@ -44,7 +44,8 @@ For M3: `chatApi.reportEvent(eventId, reason, details?)` provides the "Report ev
 
 ## Tests
 - `npm test`: reliability formula and the 0/1/2 threshold, escaping and length limits, BuddyChat (pseudonyms, "2 of 3 agreed", pair/group copy, no reveal before N/N, XSS text stays inert, forming state, error state with no demo data).
-- `bash src/features/chat/__tests__/run-sql-tests.sh`: runs 0001 + a local 0002/0003 stand-in + 0004 + `supabase/tests/0004_chat_safety.test.sql` on throwaway Postgres. Against Supabase, once 0002/0003 are in, run `psql "$DB_URL" -f supabase/tests/0004_chat_safety.test.sql`.
+- `bash src/features/chat/__tests__/run-sql-tests.sh`: applies the auth shim + the real 0001→0004 and runs every `supabase/tests/0*.test.sql` on throwaway Postgres (needs a checkout that includes 0002 and 0003). Against Supabase run `psql "$DB_URL" -f supabase/tests/0004_chat_safety.test.sql`.
+- Note for M4/M5: 0003's block trigger separates *every* shared active match, including revealed past-event pairs, so a member who blocks a buddy can no longer check in on that past meetup (the suite runs the block test last for this reason).
 
 ## Manual multi-browser check (after 0002–0004 are applied; demo accounts from INTEGRATION.md)
 1. Two browsers (A, B) request a pair for the same event. In A's DevTools Network tab, confirm no response contains B's name or email.
