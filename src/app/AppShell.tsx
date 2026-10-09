@@ -24,12 +24,13 @@ function pageLabel(path: string) {
 }
 
 export function AppShell() {
-  const { status, signOut } = useSession();
+  const { status, profile, session, signOut } = useSession();
   const { pathname, hash } = useLocation();
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const signedIn = status !== "signed_out" && status !== "loading";
   const isAccountPage = pathname === "/auth";
+  const isDemo = profile?.isDemo || session?.user.app_metadata?.fyb_demo === true;
 
   useEffect(() => {
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "instant" });
@@ -92,6 +93,7 @@ export function AppShell() {
           </div>
         </header>
         <main id="main" tabIndex={-1} className="mx-auto min-h-[calc(100dvh-13rem)] max-w-7xl px-5 py-8 outline-none sm:px-8 sm:py-10 xl:px-11">
+          {isDemo && <Notice tone="warning" title="Demo account · synthetic student" className="mb-6">This account was provisioned for testing. Its email ownership and student identity have not been verified. Do not use real personal data in this demo.</Notice>}
           {signOutError && <Notice tone="error" className="mb-6">{signOutError}</Notice>}
           <Outlet />
         </main>
