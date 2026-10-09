@@ -4,3 +4,4 @@ export * from "./Notice";
 export * from "./Logo";
 export * from "./Spinner";
 export * from "./ReservedSlot";
+export * from "./Icon";
