@@ -35,7 +35,7 @@ export function AppRoutes() {
       <Route element={<AppShell />}>
         <Route index element={<LandingPage />} />
         <Route path="auth" element={<AuthPage />} />
-        <Route path="onboarding" element={<RequireStudent allowNeedsAge><OnboardingScreen /></RequireStudent>} />
+        <Route path="onboarding" element={<RequireStudent><OnboardingScreen /></RequireStudent>} />
         <Route path="events/:id" element={<RequireStudent><P render={(id) => <ActivityDetail eventId={id} />} /></RequireStudent>} />
         <Route path="activities/new" element={<RequireStudent><CreateActivity /></RequireStudent>} />
         <Route path="find-buddy/:id" element={<RequireStudent><P render={(id) => <BuddyRequestPanel eventId={id} />} /></RequireStudent>} />
